@@ -5,10 +5,22 @@
 #pragma once
 
 // System Includes
+#include <algorithm>
+#include <cstddef>
 #include <format>
+#include <functional>
 #include <memory>
 #include <new>
-#include <utility>
+#include <ranges>
+#include <stdexcept>
+
+// Structs
+
+struct Shape
+{
+    std::size_t rows;
+    std::size_t cols;
+};
 
 template<typename T>
 class Matrix
@@ -38,10 +50,10 @@ class Matrix
         return m_cols;
     };
 
-    std::pair<unsigned, unsigned>
+    Shape
     size () const
     {
-        return std::make_pair (m_rows, m_cols);
+        return Shape { m_rows, m_cols };
     };
 
     // returning the data
@@ -75,6 +87,73 @@ class Matrix
     operator[] (unsigned row, unsigned col) const
     {
         return m_data[row * m_cols + col];
+    }
+
+    // Adding two Matrix with + operator
+    // Returns: new result Matrix
+    Matrix<T>
+    operator+ (Matrix<T> const& B)
+    {
+        if (!(m_rows == B.size ().rows && m_cols == B.size ().cols))
+        {
+            throw std::runtime_error ("Invalid Matrix for + operations. ");
+        }
+
+        Matrix<T> result (m_rows, m_cols);
+
+        std::transform (
+          m_data.begin (), m_data.end (), result.begin (), std::plus<T> ());
+
+        return result;
+    }
+
+    // Subtraction of two Matrix with - operator
+    // Returns: new result Matrix, This - B.
+    Matrix<T>
+    operator- (Matrix<T> const& B)
+    {
+        if (!(m_rows == B.size ().rows && m_cols == B.size ().cols))
+        {
+            throw std::runtime_error ("Invalid Matrix for - operations. ");
+        }
+
+        Matrix<T> result (m_rows, m_cols);
+
+        std::transform (
+          m_data.begin (), m_data.end (), result.begin (), std::minus<T> ());
+
+        return result;
+    }
+
+    // Multiply two Matrix with * operator
+    // Returns: new result Matrix, This x B
+    // Done using intrinsics, blocked for performance optimization
+    Matrix<T>
+    operator* (Matrix<T> const& B)
+    {
+        if (!(m_rows == B.cols () && m_cols == B.rows ()))
+        {
+            throw std::runtime_error ("Invalid Matrix for * operation. ");
+        }
+
+        Matrix<T> result (m_rows, B.cols ());
+        int BLOCK_SIZE = 128;
+
+        unsigned A_order = m_cols * m_rows;
+        unsigned B_order = B.cols () * B.rows ();
+
+        // Getting messy
+        for (unsigned k = 0; k < A_order; k += BLOCK_SIZE)
+        {
+            for (unsigned i = 0; i < A_order; i += BLOCK_SIZE)
+            {
+                for (unsigned j = 0; j < A_order; j += BLOCK_SIZE)
+                {
+                    /// Same for Blocks + intrinsics
+                }
+            }
+        }
+        return result;
     }
 
   private:
