@@ -35,7 +35,10 @@ class Matrix
     Matrix (unsigned rows, unsigned cols)
         : m_data (std::make_unique<T[]> (rows * cols)),
           m_rows (rows),
-          m_cols (cols) {};
+          m_cols (cols)
+    {
+        std::fill (begin (), end (), T {});
+    };
 
     // Copy Constructor
     Matrix (Matrix const& m)
@@ -50,12 +53,18 @@ class Matrix
           m_rows (other.m_rows),
           m_cols (other.m_cols)
     {
+        other.m_rows = 0;
+        other.m_cols = 0;
     }
 
     // swap
     void
     swap (Matrix& other) noexcept
     {
+        using std::swap;
+        swap (m_data, other.m_data);
+        swap (m_rows, other.m_rows);
+        swap (m_cols, other.m_cols);
     }
 
     // Copy Assingment
@@ -192,29 +201,39 @@ class Matrix
             throw std::runtime_error ("Invalid Matrix for * operation. ");
         }
 
-        Matrix<T> result (m_rows, B.cols ());
-        int BLOCK_SIZE = 128;
+        int BLOCK_SIZE = 64;
 
-        unsigned A_order = m_cols * m_rows;
-        unsigned B_order = B.cols () * B.rows ();
+        // rows of A, and result
+        unsigned M = m_rows;
 
-        for (unsigned k = 0; k < A_order; k += BLOCK_SIZE)
+        // cols of A, rows of B
+        unsigned K = m_cols;
+
+        // cols of B and result
+        unsigned N = B.cols ();
+
+        Matrix<T> result (M, N);
+
+        for (unsigned i = 0; i < M; i += BLOCK_SIZE)
         {
-            for (unsigned i = 0; i < A_order; i += BLOCK_SIZE)
+            for (unsigned k = 0; k < K; k += BLOCK_SIZE)
             {
-                for (unsigned j = 0; j < A_order; j += BLOCK_SIZE)
+                for (unsigned j = 0; j < N; j += BLOCK_SIZE)
                 {
-                    // Same for Blocks + intrinsics
-                    for (unsigned k1 = k; k1 < k + BLOCK_SIZE; ++k1)
+                    // Mini Matrix inside block
+                    for (unsigned i1 = i; i1 < std::min (i + BLOCK_SIZE, M);
+                         ++i1)
                     {
-                        for (unsigned i1 = i; i1 < i + BLOCK_SIZE; ++i1)
+                        for (unsigned k1 = k; k1 < std::min (k + BLOCK_SIZE, K);
+                             ++k1)
                         {
+                            T r = (*this)[i1, k1];
 
-                            T r = m_data[i * k];
-
-                            for (unsigned j1 = j; j1 < j + BLOCK_SIZE; ++j1)
+                            for (unsigned j1 = j;
+                                 j1 < std::min (j + BLOCK_SIZE, N);
+                                 ++j1)
                             {
-                                result[i, j] += r * B[k, i];
+                                result[i1, j1] += r * B[k1, j1];
                             }
                         }
                     }
@@ -246,15 +265,31 @@ struct std::formatter<Matrix<T>> : std::formatter<std::string>
     format (const Matrix<T>& m, format_context& ctx) const
     {
         std::string s;
-
+        s += "[";
         for (std::size_t r = 0; r < m.rows (); ++r)
         {
             s += "[ ";
             for (std::size_t c = 0; c < m.cols (); ++c)
             {
-                s += std::format ("{} ", m[r, c]);
+
+                if (c != m.cols () - 1)
+                {
+                    s += std::format ("{}, ", m[r, c]);
+                }
+                else
+                {
+                    s += std::format ("{}", m[r, c]);
+                }
             }
-            s += "]\n";
+
+            if (r != m.rows () - 1)
+            {
+                s += "],\n";
+            }
+            else
+            {
+                s += "]]";
+            }
         }
 
         return std::formatter<std::string>::format (s, ctx);

@@ -13,10 +13,10 @@ int
 main ()
 {
 
-    Matrix<int> A (2, 2);
+    Matrix<int> A (4, 4);
     std::iota (A.begin (), A.end (), 1);
 
-    Matrix<int> B (2, 2);
+    Matrix<int> B (4, 4);
     std::iota (B.begin (), B.end (), 1);
 
     std::println ("A:\n{}", A);
