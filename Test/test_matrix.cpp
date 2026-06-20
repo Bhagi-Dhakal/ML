@@ -1,16 +1,27 @@
+/*
+    Test files to test the Matrix Class.
+*/
+
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+
+// Local
+#include "../Math/Matrix.hpp"
 #include "../external/doctest/doctest.h"
 
-int
-factorial (int number)
-{
-    return number <= 1 ? number : factorial (number - 1) * number;
-}
+// System
+#include <Eigen/Dense>
+#include <chrono>
+#include <cstdio>
+#include <random>
+#include <type_traits>
 
-TEST_CASE ("testing the factorial function")
+using Clock = std::chrono::high_resolution_clock;
+
+template<typename T>
+using Eigen_mat = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
+
+template<typename T>
+static void
+fill_random_pair (Matrix<T>& m, EigenMat<T>& e)
 {
-    CHECK (factorial (1) == 1);
-    CHECK (factorial (2) == 2);
-    CHECK (factorial (3) == 6);
-    CHECK (factorial (10) == 3628800);
 }
