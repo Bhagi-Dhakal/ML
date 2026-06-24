@@ -148,6 +148,15 @@ class Matrix
         return m_data[row * m_cols + col];
     }
 
+    // Applyies some function to this matrix
+    // used to appy actavation functions in place
+    template<typename Func>
+    void
+    apply (Func&& func)
+    {
+        std::transform (begin (), end (), begin (), std::forward<Func> (func));
+    }
+
     // Adding two Matrix with + operator
     // Returns: new result Matrix
     Matrix<T>
