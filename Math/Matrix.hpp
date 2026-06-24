@@ -11,7 +11,9 @@
 #include <functional>
 #include <memory>
 #include <new>
+#include <random>
 #include <stdexcept>
+#include <type_traits>
 
 // Structs
 
@@ -146,6 +148,28 @@ class Matrix
     operator[] (unsigned row, unsigned col) const
     {
         return m_data[row * m_cols + col];
+    }
+
+    // fills the matrix with random values using uniform distributions
+    void
+    fill_random (T lower, T upper)
+    {
+        std::random_device random;
+        std::mt19937 gen (random ());
+
+        using Distribution =
+          std::conditional_t<std::is_floating_point_v<T>,
+                             std::uniform_real_distribution<>,
+                             std::uniform_int_distribution<>>;
+        Distribution dist (lower, upper);
+
+        std::generate (begin (), end (), [&] () { return gen (dist); });
+    }
+
+    void
+    fill_zero ()
+    {
+        std::generate (begin (), end (), [&] () { return 0.0; });
     }
 
     // Applyies some function to this matrix
