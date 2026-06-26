@@ -26,17 +26,17 @@ class Dense
           m_output_size (output_size),
           m_activation (Activation_func)
     {
-        m_weights = Matrix<T> (m_input_size, 1);
+        m_weights = Matrix<T> (m_input_size, m_output_size);
         m_weights.fill_random ();
 
-        m_bias = Matrix<T> (m_input_size, 1);
+        m_bias = Matrix<T> (m_output_size, 1);
         m_bias.fill_zero ();
     }
 
     Matrix<T>
     forward (const Matrix<T>& input)
     {
-        Matrix<T> A = (input * m_weights) + m_bias;
+        Matrix<T> A = (m_weights * input) + m_bias;
         m_output = A.apply (m_activation);
         return m_output;
     }

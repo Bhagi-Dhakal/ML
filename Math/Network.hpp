@@ -37,7 +37,7 @@ class Network
     predict (Matrix<T> input)
     {
         Matrix<T> output = input;
-        for (Dense<T> layer : m_layers)
+        for (auto& layer : m_layers)
         {
             output = layer.forward (output);
         }
