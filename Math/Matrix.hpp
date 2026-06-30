@@ -12,6 +12,7 @@
 #include <memory>
 #include <new>
 #include <random>
+#include <ranges>
 #include <stdexcept>
 #include <type_traits>
 
@@ -77,12 +78,12 @@ class Matrix
         return *this;
     }
 
-    Matrix&
-    operator= (Matrix&& m) noexcept
-    {
-        swap (m);
-        return *this;
-    }
+    // Matrix&
+    // operator= (Matrix&& m) noexcept
+    // {
+    //     swap (m);
+    //     return *this;
+    // }
 
     // Other methods
     unsigned
@@ -154,16 +155,15 @@ class Matrix
     void
     fill_random (T lower, T upper)
     {
-        std::random_device random;
-        std::mt19937 gen (random ());
-
         using Distribution =
           std::conditional_t<std::is_floating_point_v<T>,
-                             std::uniform_real_distribution<>,
-                             std::uniform_int_distribution<>>;
+                             std::uniform_real_distribution<T>,
+                             std::uniform_int_distribution<T>>;
+
+        static thread_local std::mt19937 gen (std::random_device {}());
         Distribution dist (lower, upper);
 
-        std::generate (begin (), end (), [&] () { return gen (dist); });
+        std::generate (begin (), end (), [&] () { return dist (gen); });
     }
 
     void
@@ -172,13 +172,48 @@ class Matrix
         std::generate (begin (), end (), [&] () { return 0.0; });
     }
 
+    Matrix<T>
+    transpose () const
+    {
+        Matrix<T> R (m_cols, m_rows);
+        for (unsigned i : std::views::iota (0u, m_rows))
+            for (unsigned j : std::views::iota (0u, m_cols))
+                R[j, i] = (*this)[i, j];
+        return R;
+    }
+
+    Matrix<T>
+    hadamard (Matrix<T> const& B) const
+    {
+        if (m_rows != B.rows () || m_cols != B.cols ())
+            throw std::runtime_error ("Invalid shapes for hadamard.");
+        Matrix<T> R (m_rows, m_cols);
+        for (unsigned i : std::views::iota (0u, m_rows))
+            for (unsigned j : std::views::iota (0u, m_cols))
+                R[i, j] = (*this)[i, j] * B[i, j];
+        return R;
+    }
+
+    Matrix<T>
+    scale (T s) const
+    {
+        Matrix<T> R (m_rows, m_cols);
+        for (unsigned i : std::views::iota (0u, m_rows))
+            for (unsigned j : std::views::iota (0u, m_cols))
+                R[i, j] = (*this)[i, j] * s;
+        return R;
+    }
+
     // Applyies some function to this matrix
     // used to appy actavation functions in place
     template<typename Func>
-    void
-    apply (Func&& func)
+    Matrix<T>
+    apply (Func&& func) const
     {
-        std::transform (begin (), end (), begin (), std::forward<Func> (func));
+        Matrix<T> result (m_rows, m_cols);
+        std::transform (
+          begin (), end (), result.begin (), std::forward<Func> (func));
+        return result;
     }
 
     // Adding two Matrix with + operator
