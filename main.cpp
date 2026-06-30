@@ -3,6 +3,8 @@
 */
 
 // Includes System
+#include <cmath>
+#include <cstdio>
 #include <fstream>
 #include <numeric>
 #include <print>
@@ -18,7 +20,7 @@
 
 // Constants
 unsigned EPOCHS = 1;
-unsigned BATCH_SIZE = 1;
+unsigned BATCH_SIZE = 32;
 float LEARN_RATE = 0.01;
 
 // Data functions
@@ -89,26 +91,56 @@ main ()
     for (unsigned epoch : std::views::iota (0u, EPOCHS))
     {
         //
-        unsigned train_images_total = train_images.rows ();
+        unsigned train_images_total = train_images.rows () / 2;
 
         // should suffel both x and y..?
+        float loss = 0.0;
 
         for (unsigned i : std::views::iota (0u, train_images_total))
         {
+
             // network input must be a 784 x 1 column vector
             Matrix<float> x = get_row (train_images, i, 784, 1);
             // one-hot target as a 10 x 1 column vector
             Matrix<float> y = get_row (train_labels, i, 10, 1);
 
-            float loss = network.train_step (x, y, LEARN_RATE);
+            loss += network.train_step (x, y, LEARN_RATE);
 
             // every 3000 th loss printed
-            if (i % 3000 == 0)
+            if (i % 1000 == 0)
             {
-                std::println (
-                  "Epoch: {}, Iteration: {}, Loss: {}", epoch, i, loss);
+                std::println ("Epoch: {}, Iteration: {}, Loss: {}",
+                              epoch,
+                              i,
+                              loss / 1000.0);
+                loss = 0.0;
             }
         }
+    }
+
+    for (unsigned i : std::views::iota (0, 10))
+    {
+
+        // full 784 x 1 image, same shape the network was trained on
+        Matrix<float> to_test = get_row (test_images, i, 784, 1);
+        Matrix<float> result = network.predict (to_test);
+
+        Matrix<float> y = get_digit (test_images, i);
+        draw_digit (y);
+
+        std::print ("Actual: ");
+        for (unsigned j : std::views::iota (0u, test_labels.cols ()))
+        {
+            std::print ("{} ", test_labels[i, j]);
+        }
+
+        // result is a 10 x 1 column vector
+        std::print ("Predicted: ");
+        for (unsigned j : std::views::iota (0u, result.rows ()))
+        {
+            std::print ("{} ", result[j, 0]);
+        }
+        std::println ("");
     }
 
     return 0;

@@ -5,6 +5,7 @@
 #pragma once
 
 // System Includes
+#include <cmath>
 #include <cstddef>
 #include <functional>
 
@@ -34,7 +35,10 @@ class Dense
           m_db (output_size, 1)
 
     {
-        m_weights.fill_random (T (0), T (1));
+        // Xavier/Glorot uniform init keeps activations from exploding:
+        // weights ~ U(-limit, limit), limit = sqrt(6 / (fan_in + fan_out))
+        T limit = std::sqrt (T (6) / T (input_size + output_size));
+        m_weights.fill_random (-limit, limit);
         m_bias.fill_zero ();
     }
 
